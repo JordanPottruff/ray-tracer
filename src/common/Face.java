@@ -11,4 +11,16 @@ public class Face {
         this.v2 = v2;
         this.v3 = v3;
     }
+
+    public Vertex v1() {
+        return this.v1;
+    }
+
+    public Vertex v2() {
+        return this.v2;
+    }
+
+    public Vertex v3() {
+        return this.v3;
+    }
 }
