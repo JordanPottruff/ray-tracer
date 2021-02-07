@@ -4,11 +4,11 @@ import com.github.jordanpottruff.jgml.Vec3;
 
 public class Vertex {
 
-    private Vec3 position;
-    private Vec3 normal;
-    private Vec3 color;
-    private double opacity;
-    private double reflectance;
+    private final Vec3 position;
+    private final Vec3 normal;
+    private final Vec3 color;
+    private final double opacity;
+    private final double reflectance;
 
     public Vertex(Vec3 position, Vec3 normal, Vec3 color) {
         this(position, normal, color, 1.0, 0.0);
