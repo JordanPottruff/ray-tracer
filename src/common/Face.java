@@ -67,4 +67,16 @@ public class Face {
         }
     }
 
+    public String toString() {
+        return toString(0);
+    }
+
+    public String toString(int spaces) {
+        String spacing = " ".repeat(spaces);
+        return spacing + "Face\n" +
+                spacing + "--vertex1\n" + v1.toString(spaces + 2) + "\n" +
+                spacing + "--vertex2\n" + v2.toString(spaces + 2) + "\n" +
+                spacing + "--vertex3\n" + v3.toString(spaces + 2);
+    }
+
 }

@@ -1,6 +1,9 @@
 package common;
 
+import com.github.jordanpottruff.jgml.Vec;
 import com.github.jordanpottruff.jgml.Vec3;
+
+import static common.Util.vecToString;
 
 public class Vertex {
 
@@ -41,4 +44,20 @@ public class Vertex {
     public double reflectance() {
         return this.reflectance;
     }
+
+    public String toString() {
+        return toString(0);
+    }
+
+    public String toString(int spaces) {
+        String spacing = " ".repeat(spaces);
+        return spacing + "Vertex\n" +
+                spacing + "--position: " + vecToString(this.position) + "\n" +
+                spacing + "--normal: " + vecToString(this.normal) + "\n" +
+                spacing + "--color: " + vecToString(this.color) + "\n" +
+                spacing + "--opacity: " + this.opacity + "\n" +
+                spacing + "--reflectance: " + this.reflectance;
+    }
+
+
 }
