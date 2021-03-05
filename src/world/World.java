@@ -15,6 +15,10 @@ import java.util.regex.Pattern;
 
 public class World {
 
+    private static final String DECIMAL_REGEX = "(\\d+\\.\\d+)";
+    private static final String SEP_REGEX = "\\s*,\\s*";
+    private static final String VEC_REGEX = "\\[\\s*" + DECIMAL_REGEX + SEP_REGEX + DECIMAL_REGEX + SEP_REGEX + DECIMAL_REGEX + "\\s*]";
+
     private final Set<Model> models;
     private final Set<LightSource> lights;
 
@@ -37,12 +41,12 @@ public class World {
         Set<Model> models = new HashSet<>();
         Set<LightSource> lights = new HashSet<>();
 
-        String line = reader.readLine().trim();
+        String line = nextLine(reader);
         if (!line.equals("WORLD")) {
             throw new Exception("FILE_ERROR: Expected keyword WORLD, got \n" + line);
         }
         do {
-            line = reader.readLine().trim();
+            line = nextLine(reader);
             if(line.equals("MODEL")) {
                 models.add(extractModel(reader));
             } else if (line.equals("LIGHT")) {
@@ -53,29 +57,31 @@ public class World {
         return new World(models, lights);
     }
 
-    private static Model extractModel(BufferedReader input) throws Exception {
-        String line = input.readLine().trim();
+    private static Model extractModel(BufferedReader reader) throws Exception {
+        String line = nextLine(reader);
         Set<Face> faces = new HashSet<Face>();
         do {
             if (!line.equals("FACE")) {
                 throw new Exception("FILE_ERROR: Expected keyword FACE, got \n" + line);
             }
-            Vertex v1 = extractVertex(input);
-            Vertex v2 = extractVertex(input);
-            Vertex v3 = extractVertex(input);
-            faces.add(new Face(v1, v2, v3));
-            line = input.readLine().trim();
+            faces.add(extractFace(reader));
+            line = nextLine(reader);
         } while (!line.equals("END_MODEL"));
         return new Model(faces);
     }
 
-    private static Vertex extractVertex(BufferedReader input) throws Exception {
-        String line = input.readLine().trim();
-        String decimal = "(\\d+\\.\\d+)";
-        String sep = "\\s*,\\s*";
-        String vector = "\\[\\s*" + decimal + sep + decimal + sep + decimal + "\\s*]";
+    private static Face extractFace(BufferedReader reader) throws Exception {
+        Vertex v1 = extractVertex(reader);
+        Vertex v2 = extractVertex(reader);
+        Vertex v3 = extractVertex(reader);
+        return new Face(v1, v2, v3);
+    }
 
-        Pattern pattern = Pattern.compile(vector + sep + vector + sep + vector + sep + decimal + sep + decimal + ";");
+    private static Vertex extractVertex(BufferedReader reader) throws Exception {
+        String line = nextLine(reader);
+
+        Pattern pattern = Pattern.compile(VEC_REGEX + SEP_REGEX + VEC_REGEX + SEP_REGEX + VEC_REGEX + SEP_REGEX +
+                DECIMAL_REGEX + SEP_REGEX + DECIMAL_REGEX + ";");
         Matcher matcher = pattern.matcher(line);
 
         if(!matcher.matches()) {
@@ -91,20 +97,17 @@ public class World {
         return new Vertex(position, normal, color, opacity, reflectance);
     }
 
-    private static LightSource extractLight(BufferedReader input) throws Exception {
-        String line = input.readLine().trim();
-        String decimal = "(\\d+\\.\\d+)";
-        String sep = "\\s*,\\s*";
-        String vector = "\\[\\s*" + decimal + sep + decimal + sep + decimal + "\\s*]";
+    private static LightSource extractLight(BufferedReader reader) throws Exception {
+        String line = nextLine(reader);
 
-        Pattern pattern = Pattern.compile(vector + sep + vector + sep + decimal + ";");
+        Pattern pattern = Pattern.compile(VEC_REGEX + SEP_REGEX + VEC_REGEX + SEP_REGEX + DECIMAL_REGEX + ";");
         Matcher matcher = pattern.matcher(line);
 
         if(!matcher.matches()) {
             throw new Exception("FILE_ERROR: Expected keyword LIGHT, got \n" + line);
         }
 
-        line = input.readLine().trim();
+        line = nextLine(reader);
         if(!line.equals("END_LIGHT")) {
             throw new Exception("FILE_ERROR: Expected keyword END_LIGHT, got \n" + line);
         }
@@ -114,6 +117,14 @@ public class World {
         double intensity = getValue(matcher, 7);
 
         return new LightSource(position, color, intensity);
+    }
+
+    private static String nextLine(BufferedReader reader) {
+        String line = "";
+        try {
+            line = reader.readLine();
+        } catch(Exception ignored){}
+        return line.replaceAll("#.*", "").trim();
     }
 
     private static double getValue(Matcher matcher, int group) {
