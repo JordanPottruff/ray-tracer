@@ -15,7 +15,7 @@ import java.util.regex.Pattern;
 
 public class World {
 
-    private static final String DECIMAL_REGEX = "(\\d+\\.\\d+)";
+    private static final String DECIMAL_REGEX = "((?:-)?\\d+(?:\\.\\d+)?)";
     private static final String SEP_REGEX = "\\s*,\\s*";
     private static final String VEC_REGEX = "\\[\\s*" + DECIMAL_REGEX + SEP_REGEX + DECIMAL_REGEX + SEP_REGEX + DECIMAL_REGEX + "\\s*]";
 
@@ -123,8 +123,15 @@ public class World {
         String line = "";
         try {
             line = reader.readLine();
-        } catch(Exception ignored){}
-        return line.replaceAll("#.*", "").trim();
+        } catch(Exception ignored){
+            return "";
+        }
+        line = line.replaceAll("#.*", "").trim();
+        if (line.isBlank()) {
+            return nextLine(reader);
+        } else {
+            return line;
+        }
     }
 
     private static double getValue(Matcher matcher, int group) {

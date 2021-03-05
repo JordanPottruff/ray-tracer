@@ -11,7 +11,7 @@ import java.util.List;
 public class Main {
 
     public static void main(String[] args) throws Exception {
-        World world = World.createFromFile("assets\\example.txt");
+        World world = World.createFromFile("assets\\pyramid.txt");
 
         List<Model> models = new ArrayList<>(world.models());
         List<LightSource> lights = new ArrayList<>(world.lights());

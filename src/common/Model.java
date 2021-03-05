@@ -21,7 +21,7 @@ public class Model {
         for (Face face: faces) {
             sb.append(face.toString(2)).append("\n");
         }
-        sb.delete(sb.length()-2, sb.length());
+        sb.delete(sb.length()-1, sb.length());
         return sb.toString();
     }
 }
