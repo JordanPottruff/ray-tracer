@@ -35,6 +35,12 @@ public class World {
         return new HashSet<>(this.lights);
     }
 
+    public Set<Face> faces() {
+        Set<Face> faces = new HashSet<>();
+        models.forEach((model) -> faces.addAll(model.faces()));
+        return faces;
+    }
+
     public static World createFromFile(String filename) throws Exception {
         BufferedReader reader = new BufferedReader(new FileReader(filename));
 
