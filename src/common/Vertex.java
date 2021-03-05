@@ -19,7 +19,7 @@ public class Vertex {
 
     public Vertex(Vec3 position, Vec3 normal, Vec3 color, double opacity, double reflectance) {
         this.position = position;
-        this.normal = normal;
+        this.normal = normal.normalize();
         this.color = color;
         this.opacity = opacity;
         this.reflectance = reflectance;
