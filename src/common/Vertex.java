@@ -1,7 +1,9 @@
 package common;
 
+import com.github.jordanpottruff.jgml.Mat4;
 import com.github.jordanpottruff.jgml.Vec;
 import com.github.jordanpottruff.jgml.Vec3;
+import com.github.jordanpottruff.jgml.Vec4;
 
 import static common.Util.vecToString;
 
@@ -43,6 +45,17 @@ public class Vertex {
 
     public double reflectance() {
         return this.reflectance;
+    }
+
+    public Vertex transform(Mat4 transformation) {
+        // Transform position.
+        Vec4 curPosition = new Vec4(position, 1);
+        Vec3 newPosition = new Vec3(transformation.multiply(curPosition));
+        // Transform normal.
+        Vec4 curNormal = new Vec4(normal, 0);
+        Vec3 newNormal = new Vec3(transformation.multiply(curNormal)).normalize();
+
+        return new Vertex(newPosition, newNormal, color, opacity, reflectance);
     }
 
     public String toString() {

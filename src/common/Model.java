@@ -1,9 +1,11 @@
 package common;
 
+import com.github.jordanpottruff.jgml.Mat4;
 import com.github.jordanpottruff.jgml.Vec3;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class Model {
 
@@ -25,6 +27,14 @@ public class Model {
         }
         sb.delete(sb.length()-1, sb.length());
         return sb.toString();
+    }
+
+    public Model transform(Mat4 transformation) {
+        return new Model(faces.stream().map((Face face) -> new Face(
+                face.v1().transform(transformation),
+                face.v2().transform(transformation),
+                face.v3().transform(transformation)
+        )).collect(Collectors.toSet()));
     }
 
     public static Model createSphere(Vec3 position,  double radius, Vec3 color, double opacity, double reflectance, int n) {
