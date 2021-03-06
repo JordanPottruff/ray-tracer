@@ -49,7 +49,7 @@ public class Main {
         World world = World.createFromFile(worldFilename);
         Tracer tracer = new Tracer(world, 1920, 1080);
 
-        Mat4 transformation = new Mat4.TransformBuilder().rotateX(-1.2).translate(new Vec3(0.0, -2.0, -1.0)).build();
+        Mat4 transformation = new Mat4.TransformBuilder().rotateX(-1.0708).translate(new Vec3(0.0, -3, 0.0)).build();
         Renderer r = tracer.trace(transformation, 100);
 
         r.savePNG(imageFilename);

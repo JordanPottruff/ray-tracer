@@ -4,6 +4,7 @@ import com.github.jordanpottruff.jgml.Mat4;
 import com.github.jordanpottruff.jgml.Vec3;
 import com.github.jordanpottruff.jgml.Vec4;
 import common.Face;
+import common.LightSource;
 import renderer.Renderer;
 import world.World;
 
@@ -31,18 +32,19 @@ public class Tracer {
 
     public Renderer trace(Mat4 transform, double fov) {
         Set<Face> faces = world.faces();
+        Set<LightSource> lights = world.lights();
         Renderer renderer = new Renderer(width, height);
         for(int x=0; x<width; x++) {
             for(int y=0; y<height; y++) {
                 Ray ray = getRay(transform, fov, x, y);
-                Vec3 color = tracePixel(ray, faces);
+                Vec3 color = tracePixel(ray, faces, lights);
                 renderer.setColor(x, y, color);
             }
         }
         return renderer;
     }
 
-    private Vec3 tracePixel(Ray ray, Set<Face> faces) {
+    private Vec3 tracePixel(Ray ray, Set<Face> faces, Set<LightSource> lights) {
         Intersection closest = null;
         for (Face face: faces) {
             Optional<Intersection> intersection = getIntersection(ray, face);
@@ -52,12 +54,42 @@ public class Tracer {
             }
         }
         if (closest != null) {
-            Face closestFace = closest.face();
-            Vec3 uvw = closest.uvw();
-            return closestFace.color(uvw.x(), uvw.y());
+            return getLight(closest, lights);
         } else {
             return new Vec3(0.0, 0.0, 0.0);
         }
+    }
+
+    private Vec3 getLight(Intersection intersection, Set<LightSource> lights) {
+        Face face = intersection.face();
+        double u = intersection.uvw().x();
+        double v = intersection.uvw().y();
+
+        Vec3 normal = face.normal(u, v);
+        Vec3 surfaceColor = face.color(u, v);
+        Vec3 colorTotal = new Vec3(0.0, 0.0, 0.0);
+        for (LightSource light: lights) {
+            Vec3 color = getLight(intersection.point(), surfaceColor, light, normal);
+            colorTotal = colorTotal.add(color);
+        }
+        double r = Math.min(colorTotal.x(), 1.0);
+        double g = Math.min(colorTotal.y(), 1.0);
+        double b = Math.min(colorTotal.z(), 1.0);
+        return new Vec3(r, g, b);
+    }
+
+    private Vec3 getLight(Vec3 point, Vec3 surfaceColor, LightSource light, Vec3 normal) {
+        Vec3 lightDir = light.position().subtract(point).normalize();
+        double intensity = normal.dot(lightDir);
+        if (intensity < 0) {
+            return new Vec3(0.0, 0.0, 0.0);
+        } else {
+            double r = surfaceColor.x() * light.color().x();
+            double g = surfaceColor.y() * light.color().y();
+            double b = surfaceColor.z() * light.color().z();
+            return new Vec3(r, g, b).scale(intensity);
+        }
+
     }
 
     private Optional<Intersection> getIntersection(Ray ray, Face face) {
