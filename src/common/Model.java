@@ -100,12 +100,12 @@ public class Model {
         double minZ = Math.min(z1, z2);
         double maxZ = Math.max(z1, z2);
         Set<Face> faces = new HashSet<>();
-        faces.addAll(createRectX(minX, true, minY, maxY, minZ, maxZ, config));
-        faces.addAll(createRectX(maxX, false, minY, maxY, minZ, maxZ, config));
-        faces.addAll(createRectY(minY, true, minX, maxX, minZ, maxZ, config));
-        faces.addAll(createRectY(maxY, false, minX, maxX, minZ, maxZ, config));
+        faces.addAll(createRectX(minX, false, minY, maxY, minZ, maxZ, config));
+        faces.addAll(createRectX(maxX, true, minY, maxY, minZ, maxZ, config));
+        faces.addAll(createRectY(minY, false, minX, maxX, minZ, maxZ, config));
+        faces.addAll(createRectY(maxY, true, minX, maxX, minZ, maxZ, config));
         faces.addAll(createRectZ(minZ, false, minX, maxX, minY, maxY, config));
-        faces.addAll(createRectZ(maxZ, false, minX, maxX, minY, maxY, config));
+        faces.addAll(createRectZ(maxZ, true, minX, maxX, minY, maxY, config));
         return new Model(faces);
     }
 

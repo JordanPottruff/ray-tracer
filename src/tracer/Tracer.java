@@ -61,22 +61,30 @@ public class Tracer {
     }
 
     private Vec3 tracePixel(Ray ray, Set<Face> faces, Set<LightSource> lights) {
+        Optional<Intersection> closest = getClosest(ray, faces);
+        return closest.map(intersection -> getLight(intersection, faces, lights)).orElse(this.ambientColor);
+    }
+
+    private Optional<Intersection> getClosest(Ray ray, Set<Face> faces) {
+        return getClosest(ray, faces, null);
+    }
+
+    private Optional<Intersection> getClosest(Ray ray, Set<Face> faces, Face ignore) {
         Intersection closest = null;
         for (Face face: faces) {
+            if (face.equals(ignore)) {
+                continue;
+            }
             Optional<Intersection> intersection = getIntersection(ray, face);
             if (intersection.isPresent()) {
                 Intersection inter = intersection.get();
-                closest = closest == null || Math.abs(closest.t) > Math.abs(inter.t) ? inter : closest;
+                closest = closest == null || closest.t > inter.t ? inter : closest;
             }
         }
-        if (closest != null) {
-            return getLight(closest, lights);
-        } else {
-            return this.ambientColor;
-        }
+        return closest == null ? Optional.empty() : Optional.of(closest);
     }
 
-    private Vec3 getLight(Intersection intersection, Set<LightSource> lights) {
+    private Vec3 getLight(Intersection intersection, Set<Face> faces, Set<LightSource> lights) {
         Face face = intersection.face();
         double u = intersection.uvw().x();
         double v = intersection.uvw().y();
@@ -85,8 +93,10 @@ public class Tracer {
         Vec3 surfaceColor = face.color(u, v);
         Vec3 colorTotal = this.ambientColor;
         for (LightSource light: lights) {
-            Vec3 color = getIntensity(intersection.point(), light, normal);
-            colorTotal = colorTotal.add(color);
+            if (hasPathToLight(intersection.point(), light, faces, face)) {
+                Vec3 color = getIntensity(intersection.point(), light, normal);
+                colorTotal = colorTotal.add(color);
+            }
         }
         double r = Math.min(surfaceColor.x() * colorTotal.x(), 1.0);
         double g = Math.min(surfaceColor.y() * colorTotal.y(), 1.0);
@@ -101,6 +111,18 @@ public class Tracer {
             return new Vec3(0.0, 0.0, 0.0);
         } else {
             return light.color().scale(intensity);
+        }
+    }
+
+    private boolean hasPathToLight(Vec3 point, LightSource light, Set<Face> faces, Face curFace) {
+        Vec3 path = light.position().subtract(point);
+        Ray ray = new Ray(point, path.normalize());
+
+        Optional<Intersection> closest = getClosest(ray, faces, curFace);
+        if (closest.isPresent()) {
+            return closest.get().t() > path.magnitude();
+        } else {
+            return true;
         }
     }
 
@@ -133,6 +155,10 @@ public class Tracer {
         }
 
         double t = v1v3.dot(qvec) * invDet;
+
+        if (t < EPSILON) {
+            return Optional.empty();
+        }
 
         Vec3 intersection = ray.origin().add(ray.direction().normalize().scale(t));
 
