@@ -10,6 +10,7 @@ import world.World;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 public class Main {
@@ -17,7 +18,8 @@ public class Main {
     public static void main(String[] args) throws Exception {
         //printWorld("assets\\pyramid.txt");
         //createImage("out/images/blank.png");
-        testTracer("assets\\pyramid.txt", "out\\images\\test.png");
+        //testTracer("assets\\pyramid.txt", "out\\images\\test.png");
+        traceSphere("out\\images\\sphere.png");
     }
 
     public static void printWorld(String filename) throws Exception {
@@ -50,6 +52,27 @@ public class Main {
         Tracer tracer = new Tracer(world, 1920, 1080);
 
         Mat4 transformation = new Mat4.TransformBuilder().rotateX(-1.0708).translate(new Vec3(0.0, -3, 0.0)).build();
+        Renderer r = tracer.trace(transformation, 100);
+
+        r.savePNG(imageFilename);
+    }
+
+    public static void traceSphere(String imageFilename) {
+        Vec3 color = new Vec3(1.0, 0.0, 0.0);
+        double opacity = 1.0;
+        double reflectance = 0.0;
+        Model sphere = Model.createSphere(new Vec3(0, 0, 0), 0.5, color, opacity, reflectance, 35);
+        LightSource light = new LightSource(new Vec3(10.0, 10.0, 10.0), new Vec3(1.0, 1.0, 1.0), 10);
+
+        HashSet<Model> models = new HashSet<>();
+        models.add(sphere);
+        HashSet<LightSource> lights = new HashSet<>();
+        lights.add(light);
+        World world = new World(models, lights);
+
+        Tracer tracer = new Tracer(world, 1920, 1080, new Vec3(0.07, 0.07, 0.07));
+
+        Mat4 transformation = new Mat4.TransformBuilder().rotateZ(Math.PI).translate(0.0, 0.0, -2.0).build();
         Renderer r = tracer.trace(transformation, 100);
 
         r.savePNG(imageFilename);
