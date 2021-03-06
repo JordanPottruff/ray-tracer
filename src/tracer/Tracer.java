@@ -66,7 +66,7 @@ public class Tracer {
             Optional<Intersection> intersection = getIntersection(ray, face);
             if (intersection.isPresent()) {
                 Intersection inter = intersection.get();
-                closest = closest == null || closest.t > inter.t ? inter : closest;
+                closest = closest == null || Math.abs(closest.t) > Math.abs(inter.t) ? inter : closest;
             }
         }
         if (closest != null) {
@@ -143,7 +143,7 @@ public class Tracer {
 
     private Ray getRay(Mat4 transform, double fov, int x, int y) {
         double pixelX = (2 * ((x + 0.5) / width) - 1) * Math.tan(fov / 2 * Math.PI / 180) * aspectRatio;
-        double pixelY = (1 - 2 * ((y + 0.5) / height)) * Math.tan(fov / 2 * Math.PI / 180);
+        double pixelY = (1 - 2 * ((y + 0.5) / height)) * Math.tan(fov/ 2 * Math.PI / 180);
         Vec4 pixel = new Vec4(pixelX, pixelY, -1, 1);
         Vec4 origin = new Vec4(0, 0, 0, 1);
 
