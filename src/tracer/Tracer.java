@@ -5,6 +5,7 @@ import com.github.jordanpottruff.jgml.Vec3;
 import com.github.jordanpottruff.jgml.Vec4;
 import common.Face;
 import common.LightSource;
+import common.Model;
 import renderer.Renderer;
 import world.World;
 
@@ -37,7 +38,7 @@ public class Tracer {
     }
 
     public Renderer trace(Mat4 transform, double fov) {
-        Set<Face> faces = world.faces();
+        Set<Model> models = world.models();
         Set<LightSource> lights = world.lights();
         Renderer renderer = new Renderer(width, height);
         int percentComplete = 0;
@@ -45,7 +46,7 @@ public class Tracer {
         for(int x=0; x<width; x++) {
             for(int y=0; y<height; y++) {
                 Ray ray = getRay(transform, fov, x, y);
-                Vec3 color = tracePixel(ray, faces, lights);
+                Vec3 color = tracePixel(ray, models, lights);
                 renderer.setColor(x, y, color);
 
                 int pixelsComplete = (x*height)+y;
@@ -55,36 +56,33 @@ public class Tracer {
                     System.out.println(percentComplete + "%");
                 }
             }
-
         }
         return renderer;
     }
 
-    private Vec3 tracePixel(Ray ray, Set<Face> faces, Set<LightSource> lights) {
-        Optional<Intersection> closest = getClosest(ray, faces);
-        return closest.map(intersection -> getLight(intersection, faces, lights)).orElse(this.ambientColor);
+    private Vec3 tracePixel(Ray ray, Set<Model> models, Set<LightSource> lights) {
+        Optional<Intersection> closest = getClosest(ray, models, null);
+        return closest.map(intersection -> getLight(intersection, models, lights, intersection.model())).orElse(this.ambientColor);
     }
 
-    private Optional<Intersection> getClosest(Ray ray, Set<Face> faces) {
-        return getClosest(ray, faces, null);
-    }
-
-    private Optional<Intersection> getClosest(Ray ray, Set<Face> faces, Face ignore) {
+    private Optional<Intersection> getClosest(Ray ray, Set<Model> models, Model ignore) {
         Intersection closest = null;
-        for (Face face: faces) {
-            if (face.equals(ignore)) {
+        for(Model model: models) {
+            if (model.equals(ignore)) {
                 continue;
             }
-            Optional<Intersection> intersection = getIntersection(ray, face);
-            if (intersection.isPresent()) {
-                Intersection inter = intersection.get();
-                closest = closest == null || closest.t > inter.t ? inter : closest;
+            for(Face face: model.faces()) {
+                Optional<Intersection> intersection = getIntersection(ray, face, model);
+                if (intersection.isPresent()) {
+                    Intersection inter = intersection.get();
+                    closest = closest == null || closest.t > inter.t ? inter : closest;
+                }
             }
         }
         return closest == null ? Optional.empty() : Optional.of(closest);
     }
 
-    private Vec3 getLight(Intersection intersection, Set<Face> faces, Set<LightSource> lights) {
+    private Vec3 getLight(Intersection intersection, Set<Model> models, Set<LightSource> lights, Model ignore) {
         Face face = intersection.face();
         double u = intersection.uvw().x();
         double v = intersection.uvw().y();
@@ -93,7 +91,7 @@ public class Tracer {
         Vec3 surfaceColor = face.color(u, v);
         Vec3 colorTotal = this.ambientColor;
         for (LightSource light: lights) {
-            if (hasPathToLight(intersection.point(), light, faces, face)) {
+            if (hasPathToLight(intersection.point(), light, models, ignore)) {
                 Vec3 color = getIntensity(intersection.point(), light, normal);
                 colorTotal = colorTotal.add(color);
             }
@@ -114,11 +112,11 @@ public class Tracer {
         }
     }
 
-    private boolean hasPathToLight(Vec3 point, LightSource light, Set<Face> faces, Face curFace) {
+    private boolean hasPathToLight(Vec3 point, LightSource light, Set<Model> models, Model ignore) {
         Vec3 path = light.position().subtract(point);
         Ray ray = new Ray(point, path.normalize());
 
-        Optional<Intersection> closest = getClosest(ray, faces, curFace);
+        Optional<Intersection> closest = getClosest(ray, models, ignore);
         if (closest.isPresent()) {
             return closest.get().t() > path.magnitude();
         } else {
@@ -126,7 +124,7 @@ public class Tracer {
         }
     }
 
-    private Optional<Intersection> getIntersection(Ray ray, Face face) {
+    private Optional<Intersection> getIntersection(Ray ray, Face face, Model model) {
         Vec3 v1 = face.v1().position();
         Vec3 v2 = face.v2().position();
         Vec3 v3 = face.v3().position();
@@ -162,7 +160,7 @@ public class Tracer {
 
         Vec3 intersection = ray.origin().add(ray.direction().normalize().scale(t));
 
-        Intersection result = new Intersection(face, intersection, new Vec3(u, v, 1-u-v), t);
+        Intersection result = new Intersection(model, face, intersection, new Vec3(u, v, 1-u-v), t);
 
         return Optional.of(result);
     }
@@ -181,17 +179,21 @@ public class Tracer {
     }
 
     public static class Intersection {
+        private final Model model;
         private final Face face;
         private final Vec3 point;
         private final Vec3 uvw;
         private final double t;
 
-        public Intersection(Face face, Vec3 point, Vec3 uvw, double t) {
+        public Intersection(Model model, Face face, Vec3 point, Vec3 uvw, double t) {
+            this.model = model;
             this.face = face;
             this.point = new Vec3(point);
             this.uvw = new Vec3(uvw);
             this.t = t;
         }
+
+        public Model model() { return this.model; }
 
         public Face face() {
             return this.face;

@@ -19,8 +19,8 @@ public class Main {
         //printWorld("assets\\pyramid.txt");
         //createImage("out/images/blank.png");
         //testTracer("assets\\pyramid.txt", "out\\images\\test.png");
-        //traceSphere("out\\images\\sphere.png");
-        traceCube("out\\images\\cube.png");
+        traceSphere("out\\images\\sphere.png");
+        //traceCube("out\\images\\cube.png");
         //traceShadows("out\\images\\shadows.png");
     }
 
@@ -60,22 +60,24 @@ public class Main {
     }
 
     public static void traceSphere(String imageFilename) {
-        Vec3 color = new Vec3(1.0, 0.0, 0.0);
+        Vec3 red = new Vec3(1.0, 0.0, 0.0);
+        Vec3 green = new Vec3(0.0, 1.0, 0.0);
         double opacity = 1.0;
         double reflectance = 0.0;
-        Model sphere = Model.createSphere(new Vec3(0, 0, 0), 0.5, color, opacity, reflectance, 35);
-        LightSource light = new LightSource(new Vec3(10.0, 10.0, -7.0), new Vec3(1.0, 1.0, 1.0), 10);
+        Model sphere = Model.createSphere(new Vec3(0, 0, -5), 0.5, red, opacity, reflectance, 12);
+        Model moon = Model.createSphere(new Vec3(1.0, 1.0, -3.5), 0.1, green, opacity, reflectance, 12);
+        LightSource light = new LightSource(new Vec3(2.0, 2, -2.0), new Vec3(1.0, 1.0, 1.0), 10);
 
         HashSet<Model> models = new HashSet<>();
         models.add(sphere);
+        models.add(moon);
         HashSet<LightSource> lights = new HashSet<>();
         lights.add(light);
         World world = new World(models, lights);
 
-        Tracer tracer = new Tracer(world, 1920, 1080, new Vec3(0.07, 0.07, 0.07));
+        Tracer tracer = new Tracer(world, 3840, 2160, new Vec3(0.07, 0.07, 0.07));
 
-        Mat4 transformation = new Mat4.TransformBuilder().translate(0.0, 0.0, -2.0).build();
-        Renderer r = tracer.trace(transformation, 100);
+        Renderer r = tracer.trace(Mat4.createIdentityMatrix(), 90);
 
         r.savePNG(imageFilename);
     }
@@ -90,7 +92,7 @@ public class Main {
         Model cube4 = Model.createCube(new Vec3(2, -1, -3), 1.0, config);
         Model cube5 = Model.createCube(new Vec3(4, -1, -3), 1.0, config);
         Model base = Model.createRectPrism(-100, 100, -10, -1.5, -30, 30, new Model.VertexConfig(grey));
-        LightSource light = new LightSource(new Vec3(-10.0, 5.0, 0.0), new Vec3(1.0, 1.0, 1.0), 10);
+        LightSource light = new LightSource(new Vec3(-5.0, 5.0, -1.0), new Vec3(1.0, 1.0, 1.0), 10);
 
         HashSet<Model> models = new HashSet<>();
         models.add(cube1);
