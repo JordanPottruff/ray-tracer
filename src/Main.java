@@ -1,9 +1,11 @@
 import com.github.jordanpottruff.jgml.Mat4;
+import com.github.jordanpottruff.jgml.Vec2;
 import com.github.jordanpottruff.jgml.Vec3;
 import com.github.jordanpottruff.jgml.VecN;
 import common.LightSource;
 import common.Model;
 import renderer.Renderer;
+import tracer.Sampler;
 import tracer.Tracer;
 import world.World;
 
@@ -18,9 +20,10 @@ public class Main {
     public static void main(String[] args) throws Exception {
         //printWorld("assets\\pyramid.txt");
         //createImage("out/images/blank.png");
+        //testSampler("out/images/sampler.png");
         //testTracer("assets\\pyramid.txt", "out\\images\\test.png");
-        traceSphere("out\\images\\sphere.png");
-        //traceCube("out\\images\\cube.png");
+        //traceSphere("out\\images\\sphere.png");
+        traceCube("out\\images\\cube.png");
         //traceShadows("out\\images\\shadows.png");
     }
 
@@ -49,12 +52,26 @@ public class Main {
         renderer.savePNG(filename);
     }
 
+    public static void testSampler(String imageFilename) {
+        Sampler sampler = new Sampler();
+        List<Vec2> samples = sampler.jitter(0, 1000, 0, 1000, 25);
+        Renderer renderer = new Renderer(1000, 1000);
+
+        for(Vec2 coord: samples) {
+            int x = (int) coord.x();
+            int y = (int) coord.y();
+            renderer.setColor(x, y, new Vec3(1.0, 1.0, 1.0));
+        }
+
+        renderer.savePNG(imageFilename);
+    }
+
     public static void testTracer(String worldFilename, String imageFilename) throws Exception {
         World world = World.createFromFile(worldFilename);
         Tracer tracer = new Tracer(world, 1920, 1080);
 
         Mat4 transformation = new Mat4.TransformBuilder().rotateX(-1.0708).translate(new Vec3(0.0, -3, 0.0)).build();
-        Renderer r = tracer.trace(transformation, 100);
+        Renderer r = tracer.trace(transformation, 100, 1);
 
         r.savePNG(imageFilename);
     }
@@ -64,8 +81,8 @@ public class Main {
         Vec3 green = new Vec3(0.0, 1.0, 0.0);
         double opacity = 1.0;
         double reflectance = 0.0;
-        Model sphere = Model.createSphere(new Vec3(0, 0, -5), 0.5, red, opacity, reflectance, 12);
-        Model moon = Model.createSphere(new Vec3(1.0, 1.0, -3.5), 0.1, green, opacity, reflectance, 12);
+        Model sphere = Model.createSphere(new Vec3(0, 0, -5), 0.5, red, opacity, reflectance, 24);
+        Model moon = Model.createSphere(new Vec3(1.0, 1.0, -3.5), 0.1, green, opacity, reflectance, 24);
         LightSource light = new LightSource(new Vec3(2.0, 2, -2.0), new Vec3(1.0, 1.0, 1.0), 10);
 
         HashSet<Model> models = new HashSet<>();
@@ -77,7 +94,7 @@ public class Main {
 
         Tracer tracer = new Tracer(world, 3840, 2160, new Vec3(0.07, 0.07, 0.07));
 
-        Renderer r = tracer.trace(Mat4.createIdentityMatrix(), 90);
+        Renderer r = tracer.trace(Mat4.createIdentityMatrix(), 90, 16);
 
         r.savePNG(imageFilename);
     }
@@ -108,7 +125,7 @@ public class Main {
         Tracer tracer = new Tracer(world, 1920, 1080, new Vec3(0.07, 0.07, 0.07));
 
         Mat4 transformation = new Mat4.TransformBuilder().translate(0.0, 0.0, 0.0).build();
-        Renderer r = tracer.trace(transformation, 120);
+        Renderer r = tracer.trace(transformation, 120, 16);
 
         r.savePNG(imageFilename);
     }

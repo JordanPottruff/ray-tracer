@@ -1,6 +1,7 @@
 package tracer;
 
 import com.github.jordanpottruff.jgml.Mat4;
+import com.github.jordanpottruff.jgml.Vec2;
 import com.github.jordanpottruff.jgml.Vec3;
 import com.github.jordanpottruff.jgml.Vec4;
 import common.Face;
@@ -37,16 +38,22 @@ public class Tracer {
         this.aspectRatio = (double) width / height;
     }
 
-    public Renderer trace(Mat4 transform, double fov) {
+    public Renderer trace(Mat4 transform, double fov, int samples) {
         Set<Model> models = world.models();
         Set<LightSource> lights = world.lights();
         Renderer renderer = new Renderer(width, height);
+        Sampler sampler = new Sampler();
         int percentComplete = 0;
         int totalPixels = width*height;
         for(int x=0; x<width; x++) {
             for(int y=0; y<height; y++) {
-                Ray ray = getRay(transform, fov, x, y);
-                Vec3 color = tracePixel(ray, models, lights);
+                List<Vec2> sampleCoords = sampler.jitter(x, x+1, y, y+1, samples);
+                Vec3 color = new Vec3(0, 0, 0);
+                for(Vec2 sample: sampleCoords) {
+                    Ray ray = getRay(transform, fov, sample.x(), sample.y());
+                    color = color.add(tracePixel(ray, models, lights));
+                }
+                color = color.scale(1.0 / samples);
                 renderer.setColor(x, y, color);
 
                 int pixelsComplete = (x*height)+y;
@@ -165,9 +172,9 @@ public class Tracer {
         return Optional.of(result);
     }
 
-    private Ray getRay(Mat4 transform, double fov, int x, int y) {
-        double pixelX = (2 * ((x + 0.5) / width) - 1) * Math.tan(fov / 2 * Math.PI / 180) * aspectRatio;
-        double pixelY = (1 - 2 * ((y + 0.5) / height)) * Math.tan(fov/ 2 * Math.PI / 180);
+    private Ray getRay(Mat4 transform, double fov, double x, double y) {
+        double pixelX = (2 * (x / width) - 1) * Math.tan(fov / 2 * Math.PI / 180) * aspectRatio;
+        double pixelY = (1 - 2 * (y / height)) * Math.tan(fov/ 2 * Math.PI / 180);
         Vec4 pixel = new Vec4(pixelX, pixelY, -1, 1);
         Vec4 origin = new Vec4(0, 0, 0, 1);
 
