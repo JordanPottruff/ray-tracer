@@ -13,6 +13,9 @@ import world.World;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static common.Util.vecToString;
 
@@ -25,6 +28,8 @@ public class Tracer {
     private final int height;
     private final Vec3 ambientColor;
     private final double aspectRatio;
+    private int pixelsComplete = 0;
+    private double percentComplete = 0;
 
     public Tracer(World world, int width, int height) {
         this(world, width, height, new Vec3(0, 0, 0));
@@ -43,26 +48,43 @@ public class Tracer {
         Set<LightSource> lights = world.lights();
         Renderer renderer = new Renderer(width, height);
         Sampler sampler = new Sampler();
-        int percentComplete = 0;
         int totalPixels = width*height;
+
+        ExecutorService executor = Executors.newFixedThreadPool(4);
+        pixelsComplete = 0;
+        percentComplete = 0;
+
         for(int x=0; x<width; x++) {
             for(int y=0; y<height; y++) {
-                List<Vec2> sampleCoords = sampler.jitter(x, x+1, y, y+1, samples);
-                Vec3 color = new Vec3(0, 0, 0);
-                for(Vec2 sample: sampleCoords) {
-                    Ray ray = getRay(transform, fov, sample.x(), sample.y());
-                    color = color.add(tracePixel(ray, models, lights));
-                }
-                color = color.scale(1.0 / samples);
-                renderer.setColor(x, y, color);
+                final int xCoord = x;
+                final int yCoord = y;
+                executor.execute(() -> {
+                    List<Vec2> sampleCoords = sampler.jitter(xCoord, xCoord + 1, yCoord, yCoord + 1, samples);
+                    Vec3 color = new Vec3(0, 0, 0);
+                    for(Vec2 sample: sampleCoords) {
+                        Ray ray = getRay(transform, fov, sample.x(), sample.y());
+                        color = color.add(tracePixel(ray, models, lights));
+                    }
+                    color = color.scale(1.0 / samples);
+                    synchronized(renderer) {
+                        renderer.setColor(xCoord, yCoord, color);
+                    }
 
-                int pixelsComplete = (x*height)+y;
-                double complete = (double) pixelsComplete / totalPixels;
-                if (percentComplete + 5 <= (int) (complete*100)) {
-                    percentComplete = (int) (complete*100);
-                    System.out.println(percentComplete + "%");
-                }
+                    // Display percentage of pixels remaining at 5% intervals.
+                    pixelsComplete++;
+                    double complete = (double) pixelsComplete / totalPixels;
+                    if (percentComplete + 5 <= (int) (complete*100)) {
+                        percentComplete = (int) (complete*100);
+                        System.out.println(percentComplete + "%");
+                    }
+                });
             }
+        }
+        executor.shutdown();
+        try {
+            executor.awaitTermination(24, TimeUnit.HOURS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
         return renderer;
     }

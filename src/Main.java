@@ -125,7 +125,7 @@ public class Main {
         Tracer tracer = new Tracer(world, 1920, 1080, new Vec3(0.07, 0.07, 0.07));
 
         Mat4 transformation = new Mat4.TransformBuilder().translate(0.0, 0.0, 0.0).build();
-        Renderer r = tracer.trace(transformation, 120, 16);
+        Renderer r = tracer.trace(transformation, 120, 1);
 
         r.savePNG(imageFilename);
     }
