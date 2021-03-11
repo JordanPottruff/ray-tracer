@@ -19,4 +19,9 @@ public class Ray {
     public Vec3 direction() {
         return this.direction;
     }
+
+    public Ray reflect(Vec3 position, Vec3 normal) {
+        Vec3 direction = this.direction.subtract(normal.scale(2 * this.direction.dot(normal)));
+        return new Ray(position, direction);
+    }
 }

@@ -22,24 +22,31 @@ import static common.Util.vecToString;
 public class Tracer {
 
     private static final double EPSILON = .0001;
+    private static final double REFLECTION_CUTOFF = 0.01;
 
     private final World world;
     private final int width;
     private final int height;
+    private final Vec3 skyColor;
     private final Vec3 ambientColor;
+    private final int phongN;
+    private final double specPer;
     private final double aspectRatio;
     private int pixelsComplete = 0;
     private double percentComplete = 0;
 
     public Tracer(World world, int width, int height) {
-        this(world, width, height, new Vec3(0, 0, 0));
+        this(world, width, height, new Vec3(0, 0, 0), new Vec3(0, 0, 0), 1, 0.0);
     }
 
-    public Tracer(World world, int width, int height, Vec3 ambientColor) {
+    public Tracer(World world, int width, int height, Vec3 skyColor, Vec3 ambientColor, int phongN, double specPer) {
         this.world = world;
         this.width = width;
         this.height = height;
+        this.skyColor = skyColor;
         this.ambientColor = ambientColor;
+        this.phongN = phongN;
+        this.specPer = specPer;
         this.aspectRatio = (double) width / height;
     }
 
@@ -50,7 +57,7 @@ public class Tracer {
         Sampler sampler = new Sampler();
         int totalPixels = width*height;
 
-        ExecutorService executor = Executors.newFixedThreadPool(4);
+        ExecutorService executor = Executors.newFixedThreadPool(5);
         pixelsComplete = 0;
         percentComplete = 0;
 
@@ -90,9 +97,23 @@ public class Tracer {
     }
 
     private Vec3 tracePixel(Ray ray, Set<Model> models, Set<LightSource> lights) {
-        Optional<Intersection> closest = getClosest(ray, models, null);
-        return closest.map(intersection -> getLight(intersection, models, lights, intersection.model())).orElse(this.ambientColor);
+        return tracePixel(ray, models, lights, 1.0);
     }
+
+    private Vec3 tracePixel(Ray ray, Set<Model> models, Set<LightSource> lights, double power) {
+        if (power < REFLECTION_CUTOFF) {
+            return new Vec3(0, 0, 0);
+        }
+        Optional<Intersection> closest = getClosest(ray, models, null);
+        return closest.map(intersection -> {
+            Vec3 surfaceColor = getLight(intersection, models, lights, intersection.model());
+            Ray reflectionRay = ray.reflect(intersection.point(), intersection.normal());
+            double reflectance = intersection.reflectance();
+            Vec3 reflection = tracePixel(reflectionRay, models, lights, power*reflectance);
+            return surfaceColor.scale(1-reflectance).add(reflection.scale(reflectance));
+        }).orElse(this.skyColor);
+    }
+
 
     private Optional<Intersection> getClosest(Ray ray, Set<Model> models, Model ignore) {
         Intersection closest = null;
@@ -112,17 +133,14 @@ public class Tracer {
     }
 
     private Vec3 getLight(Intersection intersection, Set<Model> models, Set<LightSource> lights, Model ignore) {
-        Face face = intersection.face();
-        double u = intersection.uvw().x();
-        double v = intersection.uvw().y();
-
-        Vec3 normal = face.normal(u, v);
-        Vec3 surfaceColor = face.color(u, v);
+        Vec3 normal = intersection.normal();
+        Vec3 surfaceColor = intersection.color();
         Vec3 colorTotal = this.ambientColor;
         for (LightSource light: lights) {
             if (hasPathToLight(intersection.point(), light, models, ignore)) {
-                Vec3 color = getIntensity(intersection.point(), light, normal);
-                colorTotal = colorTotal.add(color);
+                Vec3 diffuse = getDiffuse(intersection.point(), light, normal);
+                Vec3 specular = getSpecular(intersection.ray().origin(), intersection.point(), light, normal);
+                colorTotal = colorTotal.add(diffuse.scale(1 - specPer).add(specular.scale(specPer)));
             }
         }
         double r = Math.min(surfaceColor.x() * colorTotal.x(), 1.0);
@@ -131,7 +149,7 @@ public class Tracer {
         return new Vec3(r, g, b);
     }
 
-    private Vec3 getIntensity(Vec3 point, LightSource light, Vec3 normal) {
+    private Vec3 getDiffuse(Vec3 point, LightSource light, Vec3 normal) {
         Vec3 lightDir = light.position().subtract(point).normalize();
         double intensity = normal.dot(lightDir);
         if (intensity < 0) {
@@ -139,6 +157,16 @@ public class Tracer {
         } else {
             return light.color().scale(intensity);
         }
+    }
+
+    private Vec3 getSpecular(Vec3 origin, Vec3 point, LightSource light, Vec3 normal) {
+        Vec3 viewDir = origin.subtract(point).normalize();
+        Vec3 incidentDir = light.position().subtract(point).normalize();
+
+        Vec3 r = normal.scale(2 * normal.dot(incidentDir)).subtract(incidentDir);
+
+        double specular = Math.pow(Math.max(0, r.dot(viewDir)), this.phongN);
+        return light.color().scale(specular);
     }
 
     private boolean hasPathToLight(Vec3 point, LightSource light, Set<Model> models, Model ignore) {
@@ -189,7 +217,7 @@ public class Tracer {
 
         Vec3 intersection = ray.origin().add(ray.direction().normalize().scale(t));
 
-        Intersection result = new Intersection(model, face, intersection, new Vec3(u, v, 1-u-v), t);
+        Intersection result = new Intersection(intersection, ray, model, face, new Vec3(u, v, 1-u-v), t);
 
         return Optional.of(result);
     }
@@ -208,28 +236,32 @@ public class Tracer {
     }
 
     public static class Intersection {
+        private final Vec3 point;
+        private final Ray ray;
         private final Model model;
         private final Face face;
-        private final Vec3 point;
         private final Vec3 uvw;
         private final double t;
 
-        public Intersection(Model model, Face face, Vec3 point, Vec3 uvw, double t) {
+        public Intersection(Vec3 point, Ray ray, Model model, Face face, Vec3 uvw, double t) {
+            this.point = new Vec3(point);
+            this.ray = ray;
             this.model = model;
             this.face = face;
-            this.point = new Vec3(point);
             this.uvw = new Vec3(uvw);
             this.t = t;
         }
+
+        public Vec3 point() {
+            return this.point;
+        }
+
+        public Ray ray() { return this.ray; }
 
         public Model model() { return this.model; }
 
         public Face face() {
             return this.face;
-        }
-
-        public Vec3 point() {
-            return this.point;
         }
 
         public Vec3 uvw() {
@@ -238,6 +270,18 @@ public class Tracer {
 
         public double t() {
             return this.t;
+        }
+
+        public Vec3 normal() {
+            return this.face.normal(this.uvw.x(), this.uvw.y());
+        }
+
+        public Vec3 color() {
+            return this.face.color(this.uvw.x(), this.uvw.y());
+        }
+
+        public double reflectance() {
+            return this.face.reflectance(this.uvw.x(), this.uvw.y());
         }
     }
 }

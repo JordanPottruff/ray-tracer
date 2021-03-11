@@ -23,8 +23,9 @@ public class Main {
         //testSampler("out/images/sampler.png");
         //testTracer("assets\\pyramid.txt", "out\\images\\test.png");
         //traceSphere("out\\images\\sphere.png");
-        traceCube("out\\images\\cube.png");
+        //traceCube("out\\images\\cube.png");
         //traceShadows("out\\images\\shadows.png");
+        traceReflection("out\\images\\reflection.png");
     }
 
     public static void printWorld(String filename) throws Exception {
@@ -82,19 +83,20 @@ public class Main {
         double opacity = 1.0;
         double reflectance = 0.0;
         Model sphere = Model.createSphere(new Vec3(0, 0, -5), 0.5, red, opacity, reflectance, 24);
-        Model moon = Model.createSphere(new Vec3(1.0, 1.0, -3.5), 0.1, green, opacity, reflectance, 24);
-        LightSource light = new LightSource(new Vec3(2.0, 2, -2.0), new Vec3(1.0, 1.0, 1.0), 10);
+        //Model moon = Model.createSphere(new Vec3(1.0, 1.0, -3.5), 0.1, green, opacity, reflectance, 24);
+        LightSource light = new LightSource(new Vec3(-10, 1.0, 2.0), new Vec3(1.0, 1.0, 1.0), 10);
 
         HashSet<Model> models = new HashSet<>();
         models.add(sphere);
-        models.add(moon);
+        //models.add(moon);
         HashSet<LightSource> lights = new HashSet<>();
         lights.add(light);
         World world = new World(models, lights);
 
-        Tracer tracer = new Tracer(world, 3840, 2160, new Vec3(0.07, 0.07, 0.07));
+        Tracer tracer = new Tracer(world, 3840, 2160, new Vec3(1, 1, 1), new Vec3(0.07, 0.07, 0.07), 10, 0.1);
 
-        Renderer r = tracer.trace(Mat4.createIdentityMatrix(), 90, 16);
+        Mat4 transformation = new Mat4.TransformBuilder().translateZ(-1).build();
+        Renderer r = tracer.trace(transformation, 90, 1);
 
         r.savePNG(imageFilename);
     }
@@ -122,10 +124,45 @@ public class Main {
         lights.add(light);
         World world = new World(models, lights);
 
-        Tracer tracer = new Tracer(world, 1920, 1080, new Vec3(0.07, 0.07, 0.07));
+        Tracer tracer = new Tracer(world, 1920, 1080, new Vec3(0.59, 0.75, 0.82), new Vec3(0.3, 0.3, 0.3), 50, 0.1);
 
         Mat4 transformation = new Mat4.TransformBuilder().translate(0.0, 0.0, 0.0).build();
         Renderer r = tracer.trace(transformation, 120, 1);
+
+        r.savePNG(imageFilename);
+    }
+
+    public static void traceReflection(String imageFilename) {
+        Vec3 white = new Vec3(0.8, 0.8, 0.8);
+        Vec3 black = new Vec3(0.2, 0.2, 0.2);
+        Vec3 gold = new Vec3(0.828, 0.684, 0.216);
+
+        HashSet<Model> models = new HashSet<>();
+        final int size = 8;
+        final double xOffset = -size/2.0;
+        final double yOffset = -1;
+        final double zOffset = -size;
+        for(double x=0; x<size; x++) {
+            for(double z=0; z<size; z++) {
+                Model.VertexConfig config = null;
+                if ((x+z) % 2 == 0) {
+                    config = new Model.VertexConfig(white, 1, .25);
+                } else {
+                    config = new Model.VertexConfig(black, 1, .25);
+                }
+                models.add(Model.createCube(new Vec3(x+0.5+xOffset, yOffset, z+0.5+zOffset), 1.0, config));
+            }
+        }
+        models.add(Model.createSphere(new Vec3(0, 0.5, -4), 0.5, gold, 1, 0.15, 48));
+
+        HashSet<LightSource> lights = new HashSet<>();
+        lights.add(new LightSource(new Vec3(-4, 5, 0), white.scale(0.5), 10));
+        World world = new World(models, lights);
+
+        Tracer tracer = new Tracer(world, 1920, 1080, new Vec3(0.59, 0.75, 0.82), new Vec3(1, 1, 1), 30, 0.2);
+
+        Mat4 transformation = new Mat4.TransformBuilder().translateY(2.0).rotateX(-Math.PI/5).build();
+        Renderer r = tracer.trace(transformation, 90, 26);
 
         r.savePNG(imageFilename);
     }
