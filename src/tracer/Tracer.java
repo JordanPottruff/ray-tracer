@@ -10,6 +10,7 @@ import common.Model;
 import renderer.Renderer;
 import world.World;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -51,40 +52,35 @@ public class Tracer {
     public Renderer trace(Mat4 transform, double fov, int samples) {
         Set<Model> models = world.models();
         Set<LightSource> lights = world.lights();
-        Renderer renderer = new Renderer(width, height);
+
         Sampler sampler = new Sampler();
-        int totalPixels = width*height;
-
-        ExecutorService executor = Executors.newFixedThreadPool(5);
-        pixelsComplete = 0;
-        percentComplete = 0;
-
+        List<Sampler.PixelSample> pixelSamples = new ArrayList<>();
         for(int x=0; x<width; x++) {
             for(int y=0; y<height; y++) {
-                final int xCoord = x;
-                final int yCoord = y;
-                executor.execute(() -> {
-                    List<Vec2> sampleCoords = sampler.jitter(xCoord, xCoord + 1, yCoord, yCoord + 1, samples);
-                    Vec3 color = new Vec3(0, 0, 0);
-                    for(Vec2 sample: sampleCoords) {
-                        Ray ray = getRay(transform, fov, sample.x(), sample.y());
-                        color = color.add(tracePixel(ray, models, lights));
-                    }
-                    color = color.scale(1.0 / samples);
-                    synchronized(renderer) {
-                        renderer.setColor(xCoord, yCoord, color);
-                    }
-
-                    // Display percentage of pixels remaining at 5% intervals.
-                    pixelsComplete++;
-                    double complete = (double) pixelsComplete / totalPixels;
-                    if (percentComplete + 5 <= (int) (complete*100)) {
-                        percentComplete = (int) (complete*100);
-                        System.out.println(percentComplete + "%");
-                    }
-                });
+                pixelSamples.add(sampler.jitterPixel(x, y, samples));
             }
         }
+
+        ExecutorService executor = Executors.newFixedThreadPool(5);
+        Renderer renderer = new Renderer(width, height);
+        ProgressTracker tracker = new ProgressTracker(width*height, 5);
+        for(final Sampler.PixelSample pixelSample: pixelSamples) {
+            executor.execute(() -> {
+                Vec3 color = new Vec3(0, 0, 0);
+                for(Vec2 sample: pixelSample.points()) {
+                    Ray ray = getRay(transform, fov, sample.x(), sample.y());
+                    color = color.add(tracePixel(ray, models, lights));
+                }
+                color = color.scale(1.0 / samples);
+                synchronized(renderer) {
+                    renderer.setColor(pixelSample.pixelX(), pixelSample.pixelY(), color);
+                }
+
+                Optional<Integer> progress = tracker.incrementComplete();
+                progress.ifPresent(integer -> System.out.println(integer + "%"));
+            });
+        }
+
         executor.shutdown();
         try {
             executor.awaitTermination(24, TimeUnit.HOURS);
@@ -190,6 +186,36 @@ public class Tracer {
 
         Vec3 rayDirection = pixelWorld.subtract(originWorld).normalize();
         return new Ray(originWorld, rayDirection);
+    }
+
+    class ProgressTracker {
+
+        private final int total;
+        private final int percentInterval;
+        private int complete;
+        private int lastInterval;
+
+        public ProgressTracker(int total, int percentInterval) {
+            this.total = total;
+            this.percentInterval = percentInterval;
+            this.complete = 0;
+            this.lastInterval = 0;
+        }
+
+        public synchronized Optional<Integer> incrementComplete() {
+            complete++;
+            return checkProgress();
+        }
+
+        private Optional<Integer> checkProgress() {
+            int percentComplete = (int) (100 * (double) complete / total);
+            int nextInterval = lastInterval + percentInterval;
+            if (percentComplete > nextInterval) {
+                lastInterval = nextInterval;
+                return Optional.of(nextInterval);
+            }
+            return Optional.empty();
+        }
     }
 
 }

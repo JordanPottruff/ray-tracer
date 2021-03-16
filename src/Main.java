@@ -23,9 +23,9 @@ public class Main {
         //testSampler("out/images/sampler.png");
         //testTracer("assets\\pyramid.txt", "out\\images\\test.png");
         //traceSphere("out\\images\\sphere.png");
-        //traceCube("out\\images\\cube.png");
+        traceCube("out\\images\\cube.png");
         //traceShadows("out\\images\\shadows.png");
-        traceReflection("out\\images\\reflection.png");
+        //traceReflection("out\\images\\reflection.png");
     }
 
     public static void printWorld(String filename) throws Exception {
