@@ -7,11 +7,21 @@ public class Face {
     private final Vertex v1;
     private final Vertex v2;
     private final Vertex v3;
+    private final double shine;
+    private final double diffuseRatio;
+    private final double specularRatio;
 
     public Face(Vertex v1, Vertex v2, Vertex v3) {
+        this(v1, v2, v3, 0.0, 1.0, 0.0);
+    }
+
+    public Face(Vertex v1, Vertex v2, Vertex v3, double shine, double diffuseRatio, double specularRatio) {
         this.v1 = v1;
         this.v2 = v2;
         this.v3 = v3;
+        this.shine = shine;
+        this.diffuseRatio = diffuseRatio;
+        this.specularRatio = specularRatio;
     }
 
     public Vertex v1() {
@@ -24,6 +34,18 @@ public class Face {
 
     public Vertex v3() {
         return this.v3;
+    }
+
+    public double shine() {
+        return this.shine;
+    }
+
+    public double diffuseRatio() {
+        return this.diffuseRatio;
+    }
+
+    public double specularRatio() {
+        return this.specularRatio;
     }
 
     public Vec3 position(double u, double v) {

@@ -28,24 +28,20 @@ public class Tracer {
     private final int height;
     private final Vec3 skyColor;
     private final Vec3 ambientColor;
-    private final int phongN;
-    private final double specPer;
     private final double aspectRatio;
     private int pixelsComplete = 0;
     private double percentComplete = 0;
 
     public Tracer(World world, int width, int height) {
-        this(world, width, height, new Vec3(0, 0, 0), new Vec3(0, 0, 0), 1, 0.0);
+        this(world, width, height, new Vec3(0, 0, 0), new Vec3(0, 0, 0));
     }
 
-    public Tracer(World world, int width, int height, Vec3 skyColor, Vec3 ambientColor, int phongN, double specPer) {
+    public Tracer(World world, int width, int height, Vec3 skyColor, Vec3 ambientColor) {
         this.world = world;
         this.width = width;
         this.height = height;
         this.skyColor = skyColor;
         this.ambientColor = ambientColor;
-        this.phongN = phongN;
-        this.specPer = specPer;
         this.aspectRatio = (double) width / height;
     }
 
@@ -130,14 +126,21 @@ public class Tracer {
     }
 
     private Vec3 getLight(Intersection intersection, Set<Model> models, Set<LightSource> lights, Model ignore) {
+        Vec3 origin = intersection.ray().origin();
+        Vec3 point = intersection.point();
         Vec3 normal = intersection.normal();
         Vec3 surfaceColor = intersection.color();
-        Vec3 colorTotal = this.ambientColor;
+        Face face = intersection.face();
+
+        double specRatio = face.specularRatio();
+        double diffRatio = face.diffuseRatio();
+        double ambientRatio = Math.max(1.0 - specRatio - diffRatio, 0.0);
+        Vec3 colorTotal = this.ambientColor.scale(ambientRatio);
         for (LightSource light: lights) {
-            if (hasPathToLight(intersection.point(), light, models, ignore)) {
-                Vec3 diffuse = getDiffuse(intersection.point(), light, normal);
-                Vec3 specular = getSpecular(intersection.ray().origin(), intersection.point(), light, normal);
-                colorTotal = colorTotal.add(diffuse.scale(1 - specPer).add(specular.scale(specPer)));
+            if (hasPathToLight(point, light, models, ignore)) {
+                Vec3 diffuse = getDiffuse(point, light, normal);
+                Vec3 specular = getSpecular(origin, point, normal, light, face.shine());
+                colorTotal = colorTotal.add(diffuse.scale(diffRatio).add(specular.scale(specRatio)));
             }
         }
         double r = Math.min(surfaceColor.x() * colorTotal.x(), 1.0);
@@ -156,13 +159,13 @@ public class Tracer {
         }
     }
 
-    private Vec3 getSpecular(Vec3 origin, Vec3 point, LightSource light, Vec3 normal) {
+    private Vec3 getSpecular(Vec3 origin, Vec3 point, Vec3 normal, LightSource light, double shine) {
         Vec3 viewDir = origin.subtract(point).normalize();
         Vec3 incidentDir = light.position().subtract(point).normalize();
 
         Vec3 r = normal.scale(2 * normal.dot(incidentDir)).subtract(incidentDir);
 
-        double specular = Math.pow(Math.max(0, r.dot(viewDir)), this.phongN);
+        double specular = Math.pow(Math.max(0, r.dot(viewDir)), shine);
         return light.color().scale(specular);
     }
 
