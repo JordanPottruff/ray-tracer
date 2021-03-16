@@ -120,7 +120,7 @@ public class Tracer {
                 continue;
             }
             for(Face face: model.faces()) {
-                Optional<Intersection> intersection = getIntersection(ray, face, model);
+                Optional<Intersection> intersection = ray.getIntersection(face, model, EPSILON);
                 if (intersection.isPresent()) {
                     Intersection inter = intersection.get();
                     closest = closest == null || closest.t() > inter.t() ? inter : closest;
@@ -177,47 +177,6 @@ public class Tracer {
         } else {
             return true;
         }
-    }
-
-    private Optional<Intersection> getIntersection(Ray ray, Face face, Model model) {
-        Vec3 v1 = face.v1().position();
-        Vec3 v2 = face.v2().position();
-        Vec3 v3 = face.v3().position();
-
-        Vec3 v1v2 = v2.subtract(v1);
-        Vec3 v1v3 = v3.subtract(v1);
-        Vec3 pvec = ray.direction().cross(v1v3);
-        double det = v1v2.dot(pvec);
-
-        if(Math.abs(det) < EPSILON) {
-            return Optional.empty();
-        }
-
-        double invDet = 1.0 / det;
-
-        Vec3 tvec = ray.origin().subtract(v1);
-        double u = tvec.dot(pvec) * invDet;
-        if(u < 0 || u > 1) {
-            return Optional.empty();
-        }
-
-        Vec3 qvec = tvec.cross(v1v2);
-        double v = ray.direction().dot(qvec) * invDet;
-        if(v < 0 || u + v > 1) {
-            return Optional.empty();
-        }
-
-        double t = v1v3.dot(qvec) * invDet;
-
-        if (t < EPSILON) {
-            return Optional.empty();
-        }
-
-        Vec3 intersection = ray.origin().add(ray.direction().normalize().scale(t));
-
-        Intersection result = new Intersection(intersection, ray, model, face, new Vec3(u, v, 1-u-v), t);
-
-        return Optional.of(result);
     }
 
     private Ray getRay(Mat4 transform, double fov, double x, double y) {
