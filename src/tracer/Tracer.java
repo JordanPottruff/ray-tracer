@@ -83,9 +83,12 @@ public class Tracer {
 
         executor.shutdown();
         try {
-            executor.awaitTermination(24, TimeUnit.HOURS);
+            if (!executor.awaitTermination(24, TimeUnit.HOURS)) {
+                executor.shutdownNow();
+            };
         } catch (InterruptedException e) {
             e.printStackTrace();
+            executor.shutdownNow();
         }
         return renderer;
     }
