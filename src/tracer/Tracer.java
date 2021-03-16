@@ -53,7 +53,7 @@ public class Tracer {
         List<Sampler.PixelSample> pixelSamples = new ArrayList<>();
         for(int x=0; x<width; x++) {
             for(int y=0; y<height; y++) {
-                pixelSamples.add(sampler.jitterPixel(x, y, samples));
+                pixelSamples.add(sampler.multiJitterPixel(x, y, samples));
             }
         }
 

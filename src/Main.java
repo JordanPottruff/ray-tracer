@@ -52,7 +52,7 @@ public class Main {
 
     public static void testSampler(String imageFilename) {
         Sampler sampler = new Sampler();
-        List<Vec2> samples = sampler.jitter(0, 1000, 0, 1000, 25);
+        List<Vec2> samples = sampler.multiJitter(0, 1000, 0, 1000, 100);
         Renderer renderer = new Renderer(1000, 1000);
 
         for(Vec2 coord: samples) {
