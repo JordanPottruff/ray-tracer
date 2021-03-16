@@ -1,6 +1,5 @@
 package renderer;
 
-import com.github.jordanpottruff.jgml.Vec2;
 import com.github.jordanpottruff.jgml.Vec3;
 
 import javax.imageio.ImageIO;

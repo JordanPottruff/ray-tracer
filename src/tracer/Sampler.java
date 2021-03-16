@@ -2,7 +2,6 @@ package tracer;
 
 import com.github.jordanpottruff.jgml.Vec2;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;

@@ -20,9 +20,9 @@ public class Main {
         //testSampler("out/images/sampler.png");
         //testTracer("assets\\pyramid.txt", "out\\images\\test.png");
         //traceSphere("out\\images\\sphere.png");
-        traceCube("out\\images\\cube.png");
+        //traceCube("out\\images\\cube.png");
         //traceShadows("out\\images\\shadows.png");
-        //traceReflection("out\\images\\reflection.png");
+        traceReflection("out\\images\\reflection.png");
     }
 
     public static void printWorld(String filename) throws Exception {
@@ -131,7 +131,7 @@ public class Main {
     }
 
     public static void traceReflection(String imageFilename) {
-        Vec3 white = new Vec3(0.8, 0.8, 0.8);
+        Vec3 white = new Vec3(0.9, 0.9, 0.9);
         Vec3 black = new Vec3(0.2, 0.2, 0.2);
         Vec3 gold = new Vec3(0.828, 0.684, 0.216);
 
@@ -144,24 +144,24 @@ public class Main {
             for(double z=0; z<size; z++) {
                 Model.ModelConfig config;
                 if ((x+z) % 2 == 0) {
-                    config = new Model.ModelConfig(white, 1, .25, 10, 0.6, 0.4);
+                    config = new Model.ModelConfig(white, 1, .25, 10, 0.8, 0.1);
                 } else {
-                    config = new Model.ModelConfig(black, 1, .25, 10, 0.6, 0.4);
+                    config = new Model.ModelConfig(black, 1, .25, 10, 0.8, 0.1);
                 }
                 models.add(Model.createCube(new Vec3(x+0.5+xOffset, yOffset, z+0.5+zOffset), 1.0, config));
             }
         }
-        Model.ModelConfig sphereConfig = new Model.ModelConfig(gold, 1.0, 0.15, 30, 0.7, 0.2);
-        models.add(Model.createSphere(new Vec3(0, 0.5, -4), 0.5, sphereConfig, 48));
+        Model.ModelConfig sphereConfig = new Model.ModelConfig(gold, 1.0, 0.15, 30, 0.8, 0.1);
+        models.add(Model.createSphere(new Vec3(0, 0.5, -4), 0.5, sphereConfig, 16));
 
         HashSet<LightSource> lights = new HashSet<>();
-        lights.add(new LightSource(new Vec3(-4, 5, 0), white.scale(0.5), 10));
+        lights.add(new LightSource(new Vec3(-4, 5, 0), white.scale(1.0), 10));
         World world = new World(models, lights);
 
         Tracer tracer = new Tracer(world, 1920, 1080, new Vec3(0.59, 0.75, 0.82), new Vec3(1, 1, 1));
 
         Mat4 transformation = new Mat4.TransformBuilder().translateY(2.0).rotateX(-Math.PI/5).build();
-        Renderer r = tracer.trace(transformation, 90, 26);
+        Renderer r = tracer.trace(transformation, 90, 1);
 
         r.savePNG(imageFilename);
     }
