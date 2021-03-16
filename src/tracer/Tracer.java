@@ -17,8 +17,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import static common.Util.vecToString;
-
 public class Tracer {
 
     private static final double EPSILON = .0001;
@@ -125,7 +123,7 @@ public class Tracer {
                 Optional<Intersection> intersection = getIntersection(ray, face, model);
                 if (intersection.isPresent()) {
                     Intersection inter = intersection.get();
-                    closest = closest == null || closest.t > inter.t ? inter : closest;
+                    closest = closest == null || closest.t() > inter.t() ? inter : closest;
                 }
             }
         }
@@ -235,53 +233,4 @@ public class Tracer {
         return new Ray(originWorld, rayDirection);
     }
 
-    public static class Intersection {
-        private final Vec3 point;
-        private final Ray ray;
-        private final Model model;
-        private final Face face;
-        private final Vec3 uvw;
-        private final double t;
-
-        public Intersection(Vec3 point, Ray ray, Model model, Face face, Vec3 uvw, double t) {
-            this.point = new Vec3(point);
-            this.ray = ray;
-            this.model = model;
-            this.face = face;
-            this.uvw = new Vec3(uvw);
-            this.t = t;
-        }
-
-        public Vec3 point() {
-            return this.point;
-        }
-
-        public Ray ray() { return this.ray; }
-
-        public Model model() { return this.model; }
-
-        public Face face() {
-            return this.face;
-        }
-
-        public Vec3 uvw() {
-            return this.uvw;
-        }
-
-        public double t() {
-            return this.t;
-        }
-
-        public Vec3 normal() {
-            return this.face.normal(this.uvw.x(), this.uvw.y());
-        }
-
-        public Vec3 color() {
-            return this.face.color(this.uvw.x(), this.uvw.y());
-        }
-
-        public double reflectance() {
-            return this.face.reflectance(this.uvw.x(), this.uvw.y());
-        }
-    }
 }
