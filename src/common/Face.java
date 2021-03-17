@@ -1,5 +1,6 @@
 package common;
 
+import com.github.jordanpottruff.jgml.Vec2;
 import com.github.jordanpottruff.jgml.Vec3;
 
 public class Face {
@@ -10,18 +11,26 @@ public class Face {
     private final double shine;
     private final double diffuseRatio;
     private final double specularRatio;
+    private final Texture texture;
+    private final double textureOpacity;
 
     public Face(Vertex v1, Vertex v2, Vertex v3) {
         this(v1, v2, v3, 0.0, 1.0, 0.0);
     }
 
     public Face(Vertex v1, Vertex v2, Vertex v3, double shine, double diffuseRatio, double specularRatio) {
+        this(v1, v2, v3, shine, diffuseRatio, specularRatio, null, 0.0);
+    }
+
+    public Face(Vertex v1, Vertex v2, Vertex v3, double shine, double diffuseRatio, double specularRatio, Texture texture, double textureOpacity) {
         this.v1 = v1;
         this.v2 = v2;
         this.v3 = v3;
         this.shine = shine;
         this.diffuseRatio = diffuseRatio;
         this.specularRatio = specularRatio;
+        this.texture = texture;
+        this.textureOpacity = textureOpacity;
     }
 
     public Vertex v1() {
@@ -60,7 +69,14 @@ public class Face {
 
     public Vec3 color(double u, double v) {
         checkUVW(u, v);
-        return lerp(u, v, this.v1.color(), this.v2.color(), this.v3.color());
+        Vec3 surfaceColor = lerp(u, v, this.v1.color(), this.v2.color(), this.v3.color());
+        // Use texture if available.
+        if (texture != null && textureOpacity > Constants.EPSILON) {
+            Vec2 textureUV = lerp(u, v, v1.textureUV(), v2.textureUV(), v3.textureUV());
+            Vec3 textureColor = texture.getColor(textureUV);
+            return textureColor.scale(textureOpacity).add(surfaceColor.scale(1 - textureOpacity));
+        }
+        return surfaceColor;
     }
 
     public double opacity(double u, double v) {
@@ -74,6 +90,11 @@ public class Face {
     }
 
     private Vec3 lerp(double u, double v, Vec3 v1, Vec3 v2, Vec3 v3) {
+        double w = 1 - u - v;
+        return v1.scale(w).add(v2.scale(u)).add(v3.scale(v));
+    }
+
+    private Vec2 lerp(double u, double v, Vec2 v1, Vec2 v2, Vec2 v3) {
         double w = 1 - u - v;
         return v1.scale(w).add(v2.scale(u)).add(v3.scale(v));
     }

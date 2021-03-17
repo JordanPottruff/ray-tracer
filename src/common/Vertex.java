@@ -1,9 +1,6 @@
 package common;
 
-import com.github.jordanpottruff.jgml.Mat4;
-import com.github.jordanpottruff.jgml.Vec;
-import com.github.jordanpottruff.jgml.Vec3;
-import com.github.jordanpottruff.jgml.Vec4;
+import com.github.jordanpottruff.jgml.*;
 
 import static common.Util.vecToString;
 
@@ -14,17 +11,23 @@ public class Vertex {
     private final Vec3 color;
     private final double opacity;
     private final double reflectance;
+    private final Vec2 textureUV;
 
     public Vertex(Vec3 position, Vec3 normal, Vec3 color) {
         this(position, normal, color, 1.0, 0.0);
     }
 
     public Vertex(Vec3 position, Vec3 normal, Vec3 color, double opacity, double reflectance) {
+        this(position, normal, color, opacity, reflectance, new Vec2(0, 0));
+    }
+
+    public Vertex(Vec3 position, Vec3 normal, Vec3 color, double opacity, double reflectance, Vec2 textureUV) {
         this.position = position;
         this.normal = normal.normalize();
         this.color = color;
         this.opacity = opacity;
         this.reflectance = reflectance;
+        this.textureUV = textureUV;
     }
 
     public Vec3 position() {
@@ -45,6 +48,10 @@ public class Vertex {
 
     public double reflectance() {
         return this.reflectance;
+    }
+
+    public Vec2 textureUV() {
+        return this.textureUV;
     }
 
     public Vertex transform(Mat4 transformation) {

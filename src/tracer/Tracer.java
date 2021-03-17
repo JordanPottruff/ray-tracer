@@ -49,19 +49,20 @@ public class Tracer {
         Set<Model> models = world.models();
         Set<LightSource> lights = world.lights();
 
-        Sampler sampler = new Sampler();
-        List<Sampler.PixelSample> pixelSamples = new ArrayList<>();
+        List<int[]> pixels = new ArrayList<>();
         for(int x=0; x<width; x++) {
             for(int y=0; y<height; y++) {
-                pixelSamples.add(sampler.multiJitterPixel(x, y, samples));
+                pixels.add(new int[]{x, y});
             }
         }
 
         ExecutorService executor = Executors.newFixedThreadPool(5);
+        Sampler sampler = new Sampler();
         Renderer renderer = new Renderer(width, height);
         ProgressTracker tracker = new ProgressTracker(width*height, 5);
-        for(final Sampler.PixelSample pixelSample: pixelSamples) {
+        for(final int[] pixel: pixels) {
             executor.execute(() -> {
+                Sampler.PixelSample pixelSample = sampler.multiJitterPixel(pixel[0], pixel[1], samples);
                 Vec3 color = new Vec3(0, 0, 0);
                 for(Vec2 sample: pixelSample.points()) {
                     Ray ray = getRay(transform, fov, sample.x(), sample.y());

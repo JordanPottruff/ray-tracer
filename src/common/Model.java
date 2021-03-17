@@ -1,6 +1,7 @@
 package common;
 
 import com.github.jordanpottruff.jgml.Mat4;
+import com.github.jordanpottruff.jgml.Vec2;
 import com.github.jordanpottruff.jgml.Vec3;
 
 import java.util.HashSet;
@@ -111,10 +112,10 @@ public class Model {
 
     public static Set<Face> createRectX(double x, boolean posNormal, double y1, double y2, double z1, double z2, ModelConfig config) {
         Vec3 normDir = new Vec3(posNormal ? 1.0 : -1.0, 0, 0);
-        Vertex v1 = config.createVertex(new Vec3(x, y1, z1), normDir);
-        Vertex v2 = config.createVertex(new Vec3(x, y1, z2), normDir);
-        Vertex v3 = config.createVertex(new Vec3(x, y2, z2), normDir);
-        Vertex v4 = config.createVertex(new Vec3(x, y2, z1), normDir);
+        Vertex v1 = config.createVertex(new Vec3(x, y1, z1), normDir, new Vec2(0, 0));
+        Vertex v2 = config.createVertex(new Vec3(x, y1, z2), normDir, new Vec2(0, 1));
+        Vertex v3 = config.createVertex(new Vec3(x, y2, z2), normDir, new Vec2(1, 1));
+        Vertex v4 = config.createVertex(new Vec3(x, y2, z1), normDir, new Vec2(1, 0));
 
         Set<Face> faces = new HashSet<>();
         faces.add(config.createFace(v1, v2, v3));
@@ -124,10 +125,10 @@ public class Model {
 
     public static Set<Face> createRectY(double y, boolean posNormal, double x1, double x2, double z1, double z2, ModelConfig config) {
         Vec3 normDir = new Vec3(0, posNormal ? 1.0 : -1.0, 0);
-        Vertex v1 = config.createVertex(new Vec3(x1, y, z1), normDir);
-        Vertex v2 = config.createVertex(new Vec3(x1, y, z2), normDir);
-        Vertex v3 = config.createVertex(new Vec3(x2, y, z2), normDir);
-        Vertex v4 = config.createVertex(new Vec3(x2, y, z1), normDir);
+        Vertex v1 = config.createVertex(new Vec3(x1, y, z1), normDir, new Vec2(0, 0));
+        Vertex v2 = config.createVertex(new Vec3(x1, y, z2), normDir, new Vec2(0, 1));
+        Vertex v3 = config.createVertex(new Vec3(x2, y, z2), normDir, new Vec2(1, 1));
+        Vertex v4 = config.createVertex(new Vec3(x2, y, z1), normDir, new Vec2(1, 0));
 
         Set<Face> faces = new HashSet<>();
         faces.add(config.createFace(v1, v2, v3));
@@ -137,10 +138,10 @@ public class Model {
 
     public static Set<Face> createRectZ(double z, boolean posNormal, double x1, double x2, double y1, double y2, ModelConfig config) {
         Vec3 normDir = new Vec3(0, 0, posNormal ? 1.0 : -1.0);
-        Vertex v1 = config.createVertex(new Vec3(x1, y1, z), normDir);
-        Vertex v2 = config.createVertex(new Vec3(x1, y2, z), normDir);
-        Vertex v3 = config.createVertex(new Vec3(x2, y2, z), normDir);
-        Vertex v4 = config.createVertex(new Vec3(x2, y1, z), normDir);
+        Vertex v1 = config.createVertex(new Vec3(x1, y1, z), normDir, new Vec2(0, 0));
+        Vertex v2 = config.createVertex(new Vec3(x1, y2, z), normDir, new Vec2(0, 1));
+        Vertex v3 = config.createVertex(new Vec3(x2, y2, z), normDir, new Vec2(1, 1));
+        Vertex v4 = config.createVertex(new Vec3(x2, y1, z), normDir, new Vec2(1, 0));
 
         Set<Face> faces = new HashSet<>();
         faces.add(config.createFace(v1, v2, v3));
@@ -155,6 +156,8 @@ public class Model {
         private final double shine;
         private final double diffuseRatio;
         private final double specularRatio;
+        private final Texture texture;
+        private final double textureOpacity;
 
         public ModelConfig(Vec3 color) {
             this(color, 1.0, 0.0);
@@ -164,12 +167,18 @@ public class Model {
             this(color, opacity, reflectance, 0.0, 1.0, 0.0);
         }
         public ModelConfig(Vec3 color, double opacity, double reflectance, double shine, double diffuseRatio, double specularRatio) {
+            this(color, opacity, reflectance, shine, diffuseRatio, specularRatio, null, 0.0);
+        }
+
+        public ModelConfig(Vec3 color, double opacity, double reflectance, double shine, double diffuseRatio, double specularRatio, Texture texture, double textureOpacity) {
             this.color = color;
             this.opacity = opacity;
             this.reflectance = reflectance;
             this.shine = shine;
             this.diffuseRatio = diffuseRatio;
             this.specularRatio = specularRatio;
+            this.texture = texture;
+            this.textureOpacity = textureOpacity;
         }
 
         public Vec3 color() {
@@ -200,8 +209,19 @@ public class Model {
             return new Vertex(position, normal, color, opacity, reflectance);
         }
 
+        public Vertex createVertex(Vec3 position, Vec3 normal, Vec2 textureUV) {
+            return new Vertex(position, normal, color, opacity, reflectance, textureUV);
+        }
+
         public Face createFace(Vertex v1, Vertex v2, Vertex v3) {
+            if (hasTexture()) {
+                return new Face(v1, v2, v3, shine, diffuseRatio, specularRatio, texture, textureOpacity);
+            }
             return new Face(v1, v2, v3, shine, diffuseRatio, specularRatio);
+        }
+
+        private boolean hasTexture() {
+            return texture != null && textureOpacity >= Constants.EPSILON;
         }
     }
 }

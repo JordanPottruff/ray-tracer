@@ -3,6 +3,7 @@ import com.github.jordanpottruff.jgml.Vec2;
 import com.github.jordanpottruff.jgml.Vec3;
 import common.LightSource;
 import common.Model;
+import common.Texture;
 import renderer.Renderer;
 import tracer.Sampler;
 import tracer.Tracer;
@@ -22,7 +23,8 @@ public class Main {
         //traceSphere("out\\images\\sphere.png");
         //traceCube("out\\images\\cube.png");
         //traceShadows("out\\images\\shadows.png");
-        traceReflection("out\\images\\reflection.png");
+        //traceReflection("out\\images\\reflection.png");
+        traceTexturedReflection("out\\images\\reflection-textured.png");
     }
 
     public static void printWorld(String filename) throws Exception {
@@ -152,7 +154,7 @@ public class Main {
             }
         }
         Model.ModelConfig sphereConfig = new Model.ModelConfig(gold, 1.0, 0.15, 30, 0.8, 0.1);
-        models.add(Model.createSphere(new Vec3(0, 0.5, -4), 0.5, sphereConfig, 16));
+        models.add(Model.createSphere(new Vec3(0, 0.5, -4), 0.5, sphereConfig, 48));
 
         HashSet<LightSource> lights = new HashSet<>();
         lights.add(new LightSource(new Vec3(-4, 5, 0), white.scale(1.0), 10));
@@ -161,7 +163,42 @@ public class Main {
         Tracer tracer = new Tracer(world, 1920, 1080, new Vec3(0.59, 0.75, 0.82), new Vec3(1, 1, 1));
 
         Mat4 transformation = new Mat4.TransformBuilder().translateY(2.0).rotateX(-Math.PI/5).build();
-        Renderer r = tracer.trace(transformation, 90, 1);
+        Renderer r = tracer.trace(transformation, 90, 25);
+
+        r.savePNG(imageFilename);
+    }
+
+    public static void traceTexturedReflection(String imageFilename) {
+        Vec3 white = new Vec3(0.9, 0.9, 0.9);
+        Vec3 black = new Vec3(0.2, 0.2, 0.2);
+        Vec3 gold = new Vec3(0.828, 0.684, 0.216);
+        Vec3 silver = new Vec3(0.769, 0.792, 0.808);
+        Vec3 graphite = new Vec3(0.255, 0.255, 0.255);
+
+        HashSet<Model> models = new HashSet<>();
+        Texture texture = new Texture("assets\\textures\\marble-2.jpg");
+        Model.ModelConfig boardConfig = new Model.ModelConfig(white, 1, .1, 100, 0.6, 0.2, texture, 1.0);
+        Model board = Model.createCube(new Vec3(0, -4.5, -4), 8.0, boardConfig);
+        models.add(board);
+
+        Model.ModelConfig sphere1Config = new Model.ModelConfig(gold, 1.0, 0.15, 30, 0.8, 0.1);
+        models.add(Model.createSphere(new Vec3(0, 0.5, -4), 0.5, sphere1Config, 20));
+
+        Model.ModelConfig sphere2Config = new Model.ModelConfig(silver, 1.0, 0.15, 30, 0.8, 0.1);
+        models.add(Model.createSphere(new Vec3(1.5, 0.3, -2.5), 0.4, sphere2Config, 20));
+
+        Model.ModelConfig sphere3Config = new Model.ModelConfig(graphite, 1.0, 0.15, 30, 0.8, 0.1);
+        models.add(Model.createSphere(new Vec3(-2.0, 0.4, -2.5), 0.3, sphere3Config, 20));
+
+        HashSet<LightSource> lights = new HashSet<>();
+        lights.add(new LightSource(new Vec3(-4, 5, 0), white.scale(1.5), 10));
+        //lights.add(new LightSource(new Vec3(-4, 5, -8), white.scale(1.0), 10));
+        World world = new World(models, lights);
+
+        Tracer tracer = new Tracer(world, 1920, 1080, new Vec3(0.59, 0.75, 0.82), new Vec3(1, 1, 1));
+
+        Mat4 transformation = new Mat4.TransformBuilder().translateY(2.0).rotateX(-Math.PI/5).build();
+        Renderer r = tracer.trace(transformation, 90, 4);
 
         r.savePNG(imageFilename);
     }
